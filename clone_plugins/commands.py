@@ -237,31 +237,67 @@ async def base_site_handler(client, m: Message):
 
 
 @Client.on_callback_query()
+def load_start_text(bot_id):
+    # Check if custom start text exists for this bot
+    start_text_file = f"start_text_{bot_id}.json"
+    
+    if os.path.exists(start_text_file):
+        with open(start_text_file, "r") as file:
+            data = json.load(file)
+            return data.get("start_text", CLONE_START_TXT)
+    
+    return CLONE_START_TXT
+
+# Function to handle callback query
 async def cb_handler(client: Client, query: CallbackQuery):
-    if query.data == "close_data":
-        await query.message.delete()
-    elif query.data == "start":
-        buttons = [[
-            InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
-            ],[
-            InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
-            ],[
-            InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
-            InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
-        ]]
+    try:
+        if query.data == "close_data":
+            await query.message.delete()
         
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        me2 = (await client.get_me()).mention
-        await query.message.edit_text(
-            text=script.CLONE_START_TXT.format(query.from_user.mention, me2),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
+        elif query.data == "start":
+            # Get the bot's ID and load its custom start text if available
+            bot_id = str(client.me.id)
+            custom_start_text = load_start_text(bot_id)
+            
+            buttons = [
+                [
+                    InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
+                ],
+                [
+                    InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
+                ],
+                [
+                    InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
+                    InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
+                ]
+            ]
+            
+            reply_markup = InlineKeyboardMarkup(buttons)
+            
+            # Change the media of the message to a random image
+            await client.edit_message_media(
+                query.message.chat.id,
+                query.message.id,
+                InputMediaPhoto(random.choice(PICS))
+            )
+
+            # Get bot's mention for the start text
+            me2 = (await client.get_me()).mention
+            
+            # Send the start message text using the custom start text or default
+            start_text = custom_start_text.format(query.from_user.mention, me2)
+            
+            await query.message.edit_text(
+                text=start_text,
+                reply_markup=reply_markup,
+                parse_mode=enums.ParseMode.HTML
+            )
+    
+    except Exception as e:
+        # Log the error or handle it
+        print(f"Error in cb_handler: {e}")
+        await query.message.reply("An error occurred while processing your request.")
+
 
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
