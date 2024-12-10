@@ -83,7 +83,6 @@ async def start(client, message):
         caption=start_text,
         reply_markup=reply_markup
     )
-        return
 
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
