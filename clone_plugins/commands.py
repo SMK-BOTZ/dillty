@@ -46,27 +46,35 @@ def get_size(size):
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
+# Command to send start message with dynamic start text
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
-    if not await db.is_user_exist(message.from_user.id):
-        await db.add_user(message.from_user.id, message.from_user.first_name)
-    if len(message.command) != 2:
-        buttons = [[
-            InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
-            ],[
-            InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
-            ],[
-            InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
-            InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
-        ]]
-        me2 = (await client.get_me()).mention
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await message.reply_photo(
-            photo=random.choice(PICS),
-            caption=script.CLONE_START_TXT.format(message.from_user.mention, me2),
-            reply_markup=reply_markup
-        )
-        return
+    # Retrieve the bot's unique ID
+    bot_id = str(client.me.id)
+    
+    # Get custom start text or default
+    start_text = load_start_text() if os.path.exists(START_TEXT_FILE) else CLONE_START_TXT
+    
+    # Prepare buttons
+    buttons = [[
+        InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
+    ], [
+        InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
+    ], [
+        InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
+        InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
+    ]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+
+    # Get the bot's mention
+    me2 = (await client.get_me()).mention
+
+    # Send the start message
+    await message.reply_photo(
+        photo=random.choice(PICS),
+        caption=start_text.format(message.from_user.mention, me2),
+        reply_markup=reply_markup
+    )
 
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
@@ -129,6 +137,60 @@ async def start(client, message):
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
+
+
+# Default start text
+CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀᴛᴇꜱᴛ ᴀᴀᴅᴠᴀɴᴄᴇᴅ】ᴀɴᴅ ᴘᴏᴡᴡᴇʀꜰᴜʟ ꜰɪʟᴇ ꜱᴛᴏʀᴇ ʙᴏᴛ +├ᴄᴜꜱᴛᴏᴍ ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ ꜱᴜᴘᴘᴏʀᴛ┤+  ᢵᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ sᴜᴘᴘᴏʀᴛ ᢴ ᢾᴀɴᴅ ʙᴇꜱᴛ ᴜɪ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇᢿ
+
+ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜɪs ғᴇᴀᴛᴜʀᴇ ᴛʜᴇɴ ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ ғʀᴏᴍ ᴍʏ <a href=https://t.me/vj_botz>ᴘᴀʀᴇɴᴛ</a></b>"""
+
+# File to store custom start text
+START_TEXT_FILE = "start_text.json"
+
+# Load start text from file or return default
+def load_start_text():
+    if os.path.exists(START_TEXT_FILE):
+        with open(START_TEXT_FILE, "r") as file:
+            data = json.load(file)
+            return data.get("start_text", CLONE_START_TXT)
+    return CLONE_START_TXT
+
+# Save custom start text to file
+def save_start_text(text):
+    with open(START_TEXT_FILE, "w") as file:
+        json.dump({"start_text": text}, file)
+
+# Retrieve the owner of the bot
+async def get_bot_owner(bot_id):
+    owner = await db.db.bots.find_one({'bot_id': bot_id})
+    return owner['user_id'] if owner else None
+
+# Command to set custom start text (Owner only)
+@Client.on_message(filters.command("start_text") & filters.private)
+async def set_start_text(client, message):
+    # Retrieve bot's unique ID
+    bot_id = str(client.me.id)
+    
+    # Get the bot owner
+    bot_owner_id = await get_bot_owner(bot_id)
+    
+    # Check if the user is the bot owner
+    if message.from_user.id != bot_owner_id:
+        await message.reply("You are not authorized to use this command.")
+        return
+
+    # Ensure that the user provided a new start text
+    if len(message.command) < 2:
+        await message.reply("Please provide the new start text. Usage: `/start_text <new_text>`")
+        return
+
+    new_text = " ".join(message.command[1:])
+    
+    # Save the new custom start text for this bot
+    save_start_text(new_text)
+    
+    # Reply to confirm the change
+    await message.reply(f"Start text updated to:\n\n{new_text}")
 
 @Client.on_message(filters.command('api') & filters.private)
 async def shortener_api_handler(client, m: Message):
