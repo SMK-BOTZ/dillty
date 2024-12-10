@@ -236,19 +236,28 @@ async def base_site_handler(client, m: Message):
 # Ask Doubt on telegram @KingVJ01
 
 
-@Client.on_callback_query()
+from pyrogram import Client, enums
+from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+import random
+import os
+import json
+
+# Load start text from file or return default
 def load_start_text(bot_id):
-    # Check if custom start text exists for this bot
     start_text_file = f"start_text_{bot_id}.json"
     
     if os.path.exists(start_text_file):
-        with open(start_text_file, "r") as file:
-            data = json.load(file)
-            return data.get("start_text", CLONE_START_TXT)
+        try:
+            with open(start_text_file, "r") as file:
+                data = json.load(file)
+                return data.get("start_text", CLONE_START_TXT)
+        except Exception as e:
+            print(f"Error loading start text for bot {bot_id}: {e}")
     
     return CLONE_START_TXT
 
-# Function to handle callback query
+# Callback Query handler
+@Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
     try:
         if query.data == "close_data":
@@ -293,54 +302,49 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 parse_mode=enums.ParseMode.HTML
             )
     
+        elif query.data == "help":
+            buttons = [[
+                InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
+                InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
+            ]]
+            await client.edit_message_media(
+                query.message.chat.id, 
+                query.message.id, 
+                InputMediaPhoto(random.choice(PICS))
+            )
+            reply_markup = InlineKeyboardMarkup(buttons)
+            await query.message.edit_text(
+                text=script.CHELP_TXT,
+                reply_markup=reply_markup,
+                parse_mode=enums.ParseMode.HTML
+            )
+
+        elif query.data == "about":
+            buttons = [[
+                InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
+                InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
+            ]]
+            await client.edit_message_media(
+                query.message.chat.id, 
+                query.message.id, 
+                InputMediaPhoto(random.choice(PICS))
+            )
+            me2 = (await client.get_me()).mention
+            id = client.me.id
+            owner = mongo_db.bots.find_one({'bot_id': id})
+            ownerid = int(owner['user_id'])
+            reply_markup = InlineKeyboardMarkup(buttons)
+            await query.message.edit_text(
+                text=script.CABOUT_TXT.format(me2, ownerid),
+                reply_markup=reply_markup,
+                parse_mode=enums.ParseMode.HTML
+            )
+
     except Exception as e:
-        # Log the error or handle it
         print(f"Error in cb_handler: {e}")
         await query.message.reply("An error occurred while processing your request.")
 
-
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-    elif query.data == "help":
-        buttons = [[
-            InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
-            InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.CHELP_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )  
-
-    elif query.data == "about":
-        buttons = [[
-            InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
-            InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        me2 = (await client.get_me()).mention
-        id = client.me.id
-        owner = mongo_db.bots.find_one({'bot_id': id})
-        ownerid = int(owner['user_id'])
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.CABOUT_TXT.format(me2, ownerid),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )  
-
-# Don't Remove Credit Tg - @VJ_Botz
-# Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
-# Ask Doubt on telegram @KingVJ01
