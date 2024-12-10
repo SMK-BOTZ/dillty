@@ -140,7 +140,7 @@ async def start(client, message):
 
 
 # Default start text
-CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀᴛᴇꜱᴛ ᴀᴀᴅᴠᴀɴᴄᴇᴅ】ᴀɴᴅ ᴘᴏᴡᴡᴇʀꜰᴜʟ ꜰɪʟᴇ ꜱᴛᴏʀᴇ ʙᴏᴛ +├ᴄᴜꜱᴛᴏᴍ ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ ꜱᴜᴘᴘᴏʀᴛ┤+  ᢵᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ sᴜᴘᴘᴏʀᴛ ᢴ ᢾᴀɴᴅ ʙᴇꜱᴛ ᴜɪ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇᢿ
+CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀᴛᴇꜱᴛ ᴀᴅᴠᴀɴᴄᴇᴅ】ᴀɴᴅ ᴘᴏᴡᴇʀꜰᴜʟ ꜰɪʟᴇ ꜱᴛᴏʀᴇ ʙᴏᴛ +├ᴄᴜꜱᴛᴏᴍ ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ ꜱᴜᴘᴘᴏʀᴛ┤+  ᢵᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ sᴜᴘᴘᴏʀᴛ ᢴ ᢾᴀɴᴅ ʙᴇꜱᴛ ᴜɪ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇᢿ
 
 ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜɪs ғᴇᴀᴛᴜʀᴇ ᴛʜᴇɴ ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ ғʀᴏᴍ ᴍʏ <a href=https://t.me/vj_botz>ᴘᴀʀᴇɴᴛ</a></b>"""
 
@@ -148,14 +148,20 @@ CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀ
 START_TEXT_FILE = "start_text.json"
 
 async def get_bot_owner(bot_id):
-    # Assuming you're using MongoDB, retrieve bot owner from database
+    """
+    Retrieve the bot owner ID from the database using the bot_id.
+    """
     owner = mongo_db.bots.find_one({'bot_id': bot_id})
     if owner:
-        return int(owner['user_id'])  # Return the user ID of the owner
+        ownerid = int(owner['user_id'])  # Extract and return the owner user ID
+        return ownerid
     return None  # Return None if no owner is found
 
 # Load start text from file or return default
 def load_start_text(bot_id):
+    """
+    Load the custom start text for the bot, if available, from the file.
+    """
     start_text_file = f"start_text_{bot_id}.json"
     
     if os.path.exists(start_text_file):
@@ -170,6 +176,9 @@ def load_start_text(bot_id):
 
 # Save the custom start text to a file
 def save_start_text(bot_id, text):
+    """
+    Save the custom start text to a file specific to the bot_id.
+    """
     start_text_file = f"start_text_{bot_id}.json"
     
     try:
@@ -181,14 +190,22 @@ def save_start_text(bot_id, text):
 # Command handler for '/start_text' to update start text
 @Client.on_message(filters.command("start_text") & filters.private)
 async def set_start_text(client, message):
+    """
+    Handler for the /start_text command to update the bot's custom start text.
+    """
     # Retrieve bot's unique ID
     bot_id = str(client.me.id)
     
-    # Get the bot owner ID from MongoDB
-    bot_owner_id = await get_bot_owner(bot_id)
+    # Get the bot owner ID from the database
+    owner = mongo_db.bots.find_one({'bot_id': bot_id})  # Retrieve owner details
+    if not owner:
+        await message.reply("Bot owner details not found.")
+        return
+
+    ownerid = int(owner['user_id'])  # Get owner ID from the retrieved data
     
     # Check if the user is the bot owner
-    if message.from_user.id != bot_owner_id:
+    if message.from_user.id != ownerid:
         await message.reply("You are not authorized to use this command.")
         return
 
@@ -205,6 +222,7 @@ async def set_start_text(client, message):
     
     # Reply to confirm the change
     await message.reply(f"Start text updated to:\n\n{new_text}")
+
 @Client.on_message(filters.command('api') & filters.private)
 async def shortener_api_handler(client, m: Message):
     user_id = m.from_user.id
@@ -248,26 +266,7 @@ async def base_site_handler(client, m: Message):
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-
-from pyrogram import Client, enums
-from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-import random
-import os
-import json
-
 # Load start text from file or return default
-def load_start_text(bot_id):
-    start_text_file = f"start_text_{bot_id}.json"
-    
-    if os.path.exists(start_text_file):
-        try:
-            with open(start_text_file, "r") as file:
-                data = json.load(file)
-                return data.get("start_text", CLONE_START_TXT)
-        except Exception as e:
-            print(f"Error loading start text for bot {bot_id}: {e}")
-    
-    return CLONE_START_TXT
 
 # Callback Query handler
 @Client.on_callback_query()
