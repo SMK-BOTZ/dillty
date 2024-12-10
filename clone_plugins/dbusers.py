@@ -58,6 +58,10 @@ class Database:
 
     async def delete_user(self, user_id):
         await self.col.delete_many({'id': int(user_id)})
+def get_start_text(bot_id):
+    """Retrieve the start text for a specific bot."""
+    bot = mongo_db.bots.find_one({'bot_id': bot_id})
+    return bot.get('start_text', None) if bot else None
 
 
 db = Database(DATABASE_URI, DATABASE_NAME)
