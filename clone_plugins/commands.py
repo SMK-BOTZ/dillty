@@ -8,7 +8,7 @@ import random
 import asyncio
 from Script import script
 from validators import domain
-from clone_plugins.dbusers import db, get_start_text
+from clone_plugins.dbusers import db
 from clone_plugins.users_api import get_user, update_user_info
 from pyrogram import Client, filters, enums
 from plugins.database import get_file_details
