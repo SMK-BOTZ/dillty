@@ -45,36 +45,75 @@ def get_size(size):
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
+# Default start text
+CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀᴛᴇꜱᴛ ᴀᴅᴠᴀɴᴄᴇᴅ】ᴀɴᴅ ᴘᴏᴡᴇʀꜰᴜʟ ꜰɪʟᴇ ꜱᴛᴏʀᴇ ʙᴏᴛ +├ᴄᴜꜱᴛᴏᴍ ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ ꜱᴜᴘᴘᴏʀᴛ┤+  ᢵᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ sᴜᴘᴘᴏʀᴛ ᢴ ᢾᴀɴᴅ ʙᴇꜱᴛ ᴜɪ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇᢿ\n\nɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜɪs ғᴇᴀᴛᴜʀᴇ ᴛʜᴇɴ ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ ғʀᴏᴍ ᴍʏ <a href=https://t.me/vj_botz>ᴘᴀʀᴇɴᴛ</a></b>"""
 
-# Command to send start message with dynamic start text
+# Directory to store custom start text for each bot
+START_TEXT_DIR = "start_texts"
+
+# Ensure the directory exists
+if not os.path.exists(START_TEXT_DIR):
+    os.makedirs(START_TEXT_DIR)
+
+# Load start text for the current bot
+def load_start_text(bot_id):
+    file_path = os.path.join(START_TEXT_DIR, f"{bot_id}.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
+            data = json.load(file)
+            return data.get("start_text", CLONE_START_TXT)
+    return CLONE_START_TXT
+
+# Save custom start text for the current bot
+def save_start_text(bot_id, text):
+    file_path = os.path.join(START_TEXT_DIR, f"{bot_id}.json")
+    with open(file_path, "w") as file:
+        json.dump({"start_text": text}, file)
+
+# Command to set custom start text (Owner only)
+@Client.on_message(filters.command("start_text") & filters.private)
+async def set_start_text(client, message):
+    if message.from_user.id != 7357726710:  # Replace with your Telegram ID
+        await message.reply("You are not authorized to use this command.")
+        return
+
+    if len(message.command) < 2:
+        await message.reply("Please provide the new start text. Usage: `/start_text <new_text>`")
+        return
+
+    bot_id = client.me.id  # Use the bot's unique ID
+    new_text = " ".join(message.command[1:])
+    save_start_text(bot_id, new_text)
+    await message.reply(f"Start text updated for this bot to:\n\n{new_text}")
+
+# Command to display the start text
 @Client.on_message(filters.command("start") & filters.incoming)
-async def start(client, message):
-    # Retrieve the bot's unique ID
-    bot_id = str(client.me.id)
-    
-    # Get custom start text or default
-    start_text = load_start_text() if os.path.exists(START_TEXT_FILE) else CLONE_START_TXT
-    
-    # Prepare buttons
-    buttons = [[
-        InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
-    ], [
-        InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
-    ], [
-        InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
-        InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
-    ]]
-    reply_markup = InlineKeyboardMarkup(buttons)
+async def start_command(client, message):
+    if not await db.is_user_exist(message.from_user.id):
+        await db.add_user(message.from_user.id, message.from_user.first_name)
+    if len(message.command) != 2:
+        buttons = [[
+            InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
+            ],[
+            InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
+            ],[
+            InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
+            InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
+        ]]
+        me2 = (await client.get_me()).mention
+        reply_markup = InlineKeyboardMarkup(buttons)
+        await message.reply_photo(
+            photo=random.choice(PICS),
+            caption=CLONE_START_TXT.format(message.from_user.mention, me2),
+            reply_markup=reply_markup
+        )
+    else:
+        bot_id = client.me.id  # Use the bot's unique ID
+        start_text = load_start_text(bot_id)
+        user_name = message.from_user.first_name
+        bot_name = client.me.first_name
+        await message.reply(start_text.format(user_name, bot_name), disable_web_page_preview=True)
 
-    # Get the bot's mention
-    me2 = (await client.get_me()).mention
-
-    # Send the start message
-    await message.reply_photo(
-        photo=random.choice(PICS),
-        caption=start_text.format(message.from_user.mention, me2),
-        reply_markup=reply_markup
-    )
 
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
@@ -138,91 +177,6 @@ async def start(client, message):
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-
-# Default start text
-CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀᴛᴇꜱᴛ ᴀᴅᴠᴀɴᴄᴇᴅ】ᴀɴᴅ ᴘᴏᴡᴇʀꜰᴜʟ ꜰɪʟᴇ ꜱᴛᴏʀᴇ ʙᴏᴛ +├ᴄᴜꜱᴛᴏᴍ ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ ꜱᴜᴘᴘᴏʀᴛ┤+  ᢵᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ sᴜᴘᴘᴏʀᴛ ᢴ ᢾᴀɴᴅ ʙᴇꜱᴛ ᴜɪ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇᢿ
-
-ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜɪs ғᴇᴀᴛᴜʀᴇ ᴛʜᴇɴ ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ ғʀᴏᴍ ᴍʏ <a href=https://t.me/vj_botz>ᴘᴀʀᴇɴᴛ</a></b>"""
-
-# File to store custom start text
-START_TEXT_FILE = "start_text.json"
-
-async def get_bot_owner(bot_id):
-    """
-    Retrieve the bot owner ID from the database using the bot_id.
-    """
-    owner = mongo_db.bots.find_one({'bot_id': bot_id})
-    if owner:
-        ownerid = int(owner['user_id'])  # Extract and return the owner user ID
-        return ownerid
-    return None  # Return None if no owner is found
-
-# Load start text from file or return default
-def load_start_text(bot_id):
-    """
-    Load the custom start text for the bot, if available, from the file.
-    """
-    start_text_file = f"start_text_{bot_id}.json"
-    
-    if os.path.exists(start_text_file):
-        try:
-            with open(start_text_file, "r") as file:
-                data = json.load(file)
-                return data.get("start_text", "Welcome to the bot!")
-        except Exception as e:
-            print(f"Error loading start text for bot {bot_id}: {e}")
-    
-    return "Welcome to the bot!"
-
-# Save the custom start text to a file
-def save_start_text(bot_id, text):
-    """
-    Save the custom start text to a file specific to the bot_id.
-    """
-    start_text_file = f"start_text_{bot_id}.json"
-    
-    try:
-        with open(start_text_file, "w") as file:
-            json.dump({"start_text": text}, file)
-    except Exception as e:
-        print(f"Error saving start text for bot {bot_id}: {e}")
-
-# Command handler for '/start_text' to update start text
-@Client.on_message(filters.command("start_text") & filters.private)
-async def set_start_text(client, message):
-    """
-    Handler for the /start_text command to update the bot's custom start text.
-    """
-    # Retrieve bot's unique ID
-    bot_id = str(client.me.id)
-    
-    # Get the bot owner ID from the database
-    owner = mongo_db.bots.find_one({'bot_id': bot_id})  # Retrieve owner details
-    if not owner:
-        await message.reply("Bot owner details not found.")
-        return
-
-    ownerid = int(owner['user_id'])  # Get owner ID from the retrieved data
-    
-    # Check if the user is the bot owner
-    if message.from_user.id != ownerid:
-        await message.reply("You are not authorized to use this command.")
-        return
-
-    # Ensure that the user provided a new start text
-    if len(message.command) < 2:
-        await message.reply("Please provide the new start text. Usage: `/start_text <new_text>`")
-        return
-
-    # Join the provided text and save the new start text
-    new_text = " ".join(message.command[1:])
-    
-    # Save the new custom start text for this bot
-    save_start_text(bot_id, new_text)
-    
-    # Reply to confirm the change
-    await message.reply(f"Start text updated to:\n\n{new_text}")
-
 @Client.on_message(filters.command('api') & filters.private)
 async def shortener_api_handler(client, m: Message):
     user_id = m.from_user.id
@@ -266,97 +220,78 @@ async def base_site_handler(client, m: Message):
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-# Load start text from file or return default
 
-# Callback Query handler
+# Callback query handler
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
-    try:
-        if query.data == "close_data":
-            await query.message.delete()
-        
-        elif query.data == "start":
-            # Get the bot's ID and load its custom start text if available
-            bot_id = str(client.me.id)
-            custom_start_text = load_start_text(bot_id)
-            
-            buttons = [
-                [
-                    InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
-                ],
-                [
-                    InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
-                ],
-                [
-                    InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
-                    InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
-                ]
-            ]
-            
-            reply_markup = InlineKeyboardMarkup(buttons)
-            
-            # Change the media of the message to a random image
-            await client.edit_message_media(
-                query.message.chat.id,
-                query.message.id,
-                InputMediaPhoto(random.choice(PICS))
-            )
-
-            # Get bot's mention for the start text
-            me2 = (await client.get_me()).mention
-            
-            # Send the start message text using the custom start text or default
-            start_text = custom_start_text.format(query.from_user.mention, me2)
-            
-            await query.message.edit_text(
-                text=start_text,
-                reply_markup=reply_markup,
-                parse_mode=enums.ParseMode.HTML
-            )
-    
-        elif query.data == "help":
-            buttons = [[
-                InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
-                InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
-            ]]
-            await client.edit_message_media(
-                query.message.chat.id, 
-                query.message.id, 
-                InputMediaPhoto(random.choice(PICS))
-            )
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await query.message.edit_text(
-                text=script.CHELP_TXT,
-                reply_markup=reply_markup,
-                parse_mode=enums.ParseMode.HTML
-            )
-
-        elif query.data == "about":
-            buttons = [[
-                InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
-                InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
-            ]]
-            await client.edit_message_media(
-                query.message.chat.id, 
-                query.message.id, 
-                InputMediaPhoto(random.choice(PICS))
-            )
-            me2 = (await client.get_me()).mention
-            id = client.me.id
-            owner = mongo_db.bots.find_one({'bot_id': id})
-            ownerid = int(owner['user_id'])
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await query.message.edit_text(
-                text=script.CABOUT_TXT.format(me2, ownerid),
-                reply_markup=reply_markup,
-                parse_mode=enums.ParseMode.HTML
-            )
-
-    except Exception as e:
-        print(f"Error in cb_handler: {e}")
-        await query.message.reply("An error occurred while processing your request.")
+    if query.data == "close_data":
+        await query.message.delete()
+    elif query.data == "start":
+        buttons = [[
+            InlineKeyboardButton('💝 sᴜʙsᴄʀɪʙᴇ ᴍʏ ʏᴏᴜᴛᴜʙᴇ ᴄʜᴀɴɴᴇʟ', url='https://youtube.com/@Tech_VJ')
+            ],[
+            InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', url=f'https://t.me/{BOT_USERNAME}?start=clone')
+            ],[
+            InlineKeyboardButton('💁‍♀️ ʜᴇʟᴘ', callback_data='help'),
+            InlineKeyboardButton('ᴀʙᴏᴜᴛ 🔻', callback_data='about')
+        ]]
+        reply_markup = InlineKeyboardMarkup(buttons)
+        bot_id = client.me.id  # Use the bot's unique ID
+        me2 = (await client.get_me()).mention
+        await client.edit_message_media(
+            query.message.chat.id,
+            query.message.id,
+            InputMediaPhoto(random.choice(PICS))
+        )
+        start_text = load_start_text(bot_id)
+        await query.message.edit_text(
+            text=start_text.format(query.from_user.mention, me2),
+            reply_markup=reply_markup,
+            parse_mode=enums.ParseMode.HTML
+        )
 
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
+    elif query.data == "help":
+        buttons = [[
+            InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
+            InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
+        ]]
+        await client.edit_message_media(
+            query.message.chat.id, 
+            query.message.id, 
+            InputMediaPhoto(random.choice(PICS))
+        )
+        reply_markup = InlineKeyboardMarkup(buttons)
+        await query.message.edit_text(
+            text=script.CHELP_TXT,
+            reply_markup=reply_markup,
+            parse_mode=enums.ParseMode.HTML
+        )  
+
+    elif query.data == "about":
+        buttons = [[
+            InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
+            InlineKeyboardButton('🔒 Cʟᴏsᴇ', callback_data='close_data')
+        ]]
+        await client.edit_message_media(
+            query.message.chat.id, 
+            query.message.id, 
+            InputMediaPhoto(random.choice(PICS))
+        )
+        me2 = (await client.get_me()).mention
+        id = client.me.id
+        owner = mongo_db.bots.find_one({'bot_id': id})
+        ownerid = int(owner['user_id'])
+        reply_markup = InlineKeyboardMarkup(buttons)
+        await query.message.edit_text(
+            text=script.CABOUT_TXT.format(me2, ownerid),
+            reply_markup=reply_markup,
+            parse_mode=enums.ParseMode.HTML
+        )  
+
+# Don't Remove Credit Tg - @VJ_Botz
+# Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
+# Ask Doubt on telegram @KingVJ01
