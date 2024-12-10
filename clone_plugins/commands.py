@@ -147,31 +147,44 @@ CLONE_START_TXT = """<b>Hᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ {}, 【ɪ ᴀᴍ ʟᴀ
 # File to store custom start text
 START_TEXT_FILE = "start_text.json"
 
-# Load start text from file or return default
-def load_start_text():
-    if os.path.exists(START_TEXT_FILE):
-        with open(START_TEXT_FILE, "r") as file:
-            data = json.load(file)
-            return data.get("start_text", CLONE_START_TXT)
-    return CLONE_START_TXT
-
-# Save custom start text to file
-def save_start_text(text):
-    with open(START_TEXT_FILE, "w") as file:
-        json.dump({"start_text": text}, file)
-
-# Retrieve the owner of the bot
 async def get_bot_owner(bot_id):
-    owner = await db.db.bots.find_one({'bot_id': bot_id})
-    return owner['user_id'] if owner else None
+    # Assuming you're using MongoDB, retrieve bot owner from database
+    owner = mongo_db.bots.find_one({'bot_id': bot_id})
+    if owner:
+        return int(owner['user_id'])  # Return the user ID of the owner
+    return None  # Return None if no owner is found
 
-# Command to set custom start text (Owner only)
+# Load start text from file or return default
+def load_start_text(bot_id):
+    start_text_file = f"start_text_{bot_id}.json"
+    
+    if os.path.exists(start_text_file):
+        try:
+            with open(start_text_file, "r") as file:
+                data = json.load(file)
+                return data.get("start_text", "Welcome to the bot!")
+        except Exception as e:
+            print(f"Error loading start text for bot {bot_id}: {e}")
+    
+    return "Welcome to the bot!"
+
+# Save the custom start text to a file
+def save_start_text(bot_id, text):
+    start_text_file = f"start_text_{bot_id}.json"
+    
+    try:
+        with open(start_text_file, "w") as file:
+            json.dump({"start_text": text}, file)
+    except Exception as e:
+        print(f"Error saving start text for bot {bot_id}: {e}")
+
+# Command handler for '/start_text' to update start text
 @Client.on_message(filters.command("start_text") & filters.private)
 async def set_start_text(client, message):
     # Retrieve bot's unique ID
     bot_id = str(client.me.id)
     
-    # Get the bot owner
+    # Get the bot owner ID from MongoDB
     bot_owner_id = await get_bot_owner(bot_id)
     
     # Check if the user is the bot owner
@@ -184,14 +197,14 @@ async def set_start_text(client, message):
         await message.reply("Please provide the new start text. Usage: `/start_text <new_text>`")
         return
 
+    # Join the provided text and save the new start text
     new_text = " ".join(message.command[1:])
     
     # Save the new custom start text for this bot
-    save_start_text(new_text)
+    save_start_text(bot_id, new_text)
     
     # Reply to confirm the change
     await message.reply(f"Start text updated to:\n\n{new_text}")
-
 @Client.on_message(filters.command('api') & filters.private)
 async def shortener_api_handler(client, m: Message):
     user_id = m.from_user.id
